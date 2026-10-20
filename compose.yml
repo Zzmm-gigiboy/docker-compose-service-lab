@@ -1,0 +1,57 @@
+# From this directory: docker compose up --build
+services:
+  merchant-api:
+    build:
+      context: ./services/merchant-api
+      dockerfile: Dockerfile
+    environment:
+      PORT: '8000'
+      MERCHANT_DB: /data/merchant.db
+    volumes:
+      - merchant-data:/data
+    ports: ['8000:8000']
+    healthcheck:
+      test: ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://localhost:8000/health",timeout=3)']
+      interval: 20s
+      timeout: 5s
+      retries: 3
+  greeting-api:
+    build:
+      context: ./services/greeting-api
+      dockerfile: Dockerfile
+    environment:
+      PORT: '8001'
+      GREETINGS_DB: /data/greetings.db
+    volumes:
+      - greeting-data:/data
+    ports: ['8001:8001']
+    healthcheck:
+      test: ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://localhost:8001/health",timeout=3)']
+      interval: 20s
+      timeout: 5s
+      retries: 3
+  pocket-api:
+    build:
+      context: ./services/pocket-api
+      dockerfile: Dockerfile
+    environment:
+      PORT: '8002'
+      POCKET_DB: /data/pocket.db
+    volumes:
+      - pocket-data:/data
+    ports: ['8002:8002']
+  link-api:
+    build:
+      context: ./services/link-api
+      dockerfile: Dockerfile
+    environment:
+      PORT: '8080'
+      LINK_STORE_FILE: /data/links.json
+    volumes:
+      - link-data:/data
+    ports: ['8080:8080']
+volumes:
+  merchant-data:
+  greeting-data:
+  pocket-data:
+  link-data:
