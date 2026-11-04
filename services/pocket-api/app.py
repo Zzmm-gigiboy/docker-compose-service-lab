@@ -1,6 +1,7 @@
 """Pocket Planner companion REST API."""
 import os
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -9,10 +10,15 @@ DB_PATH = Path(os.environ.get('POCKET_DB', str(Path(__file__).with_name('pocket.
 app = FastAPI(title='Pocket Planner API')
 
 
+@contextmanager
 def db():
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
-    return connection
+    try:
+        with connection:
+            yield connection
+    finally:
+        connection.close()
 
 
 def init_db():

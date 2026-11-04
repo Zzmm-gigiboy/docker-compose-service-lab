@@ -1,6 +1,7 @@
 """Occasion Messenger prototype: no messages are ever sent."""
 import os
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 from datetime import date, timedelta
 from fastapi import FastAPI, HTTPException
@@ -12,10 +13,15 @@ app = FastAPI(title='Occasion Messenger API')
 app.add_middleware(CORSMiddleware, allow_origins=['http://localhost:5174', 'http://127.0.0.1:5174'], allow_methods=['*'], allow_headers=['*'])
 
 
+@contextmanager
 def db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        with conn:
+            yield conn
+    finally:
+        conn.close()
 
 
 def init_db():
