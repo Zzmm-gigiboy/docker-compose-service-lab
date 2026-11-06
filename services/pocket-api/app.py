@@ -48,13 +48,18 @@ def notes():
 
 @app.post('/api/notes', status_code=201)
 def create(item: NewNote):
+    clean_title = item.title.strip()
+    if not clean_title:
+        raise HTTPException(422, detail='Title cannot be empty or whitespace only')
     with db() as conn:
-        cur = conn.execute('INSERT INTO notes(title) VALUES(?)', (item.title.strip(),))
-        return {'id': cur.lastrowid, 'title': item.title.strip(), 'completed': False}
+        cur = conn.execute('INSERT INTO notes(title) VALUES(?)', (clean_title,))
+        return {'id': cur.lastrowid, 'title': clean_title, 'completed': False}
 
 
 @app.patch('/api/notes/{note_id}')
 def toggle(note_id: int, update: UpdateNote):
+    if note_id <= 0:
+        raise HTTPException(422, detail='Note ID must be a positive integer')
     with db() as conn:
         res = conn.execute('UPDATE notes SET completed=? WHERE id=?', (int(update.completed), note_id))
         if not res.rowcount:
@@ -64,6 +69,8 @@ def toggle(note_id: int, update: UpdateNote):
 
 @app.delete('/api/notes/{note_id}', status_code=204)
 def delete(note_id: int):
+    if note_id <= 0:
+        raise HTTPException(422, detail='Note ID must be a positive integer')
     with db() as conn:
         res = conn.execute('DELETE FROM notes WHERE id=?', (note_id,))
         if not res.rowcount:
