@@ -64,14 +64,27 @@ def contacts():
 
 @app.post('/api/contacts', status_code=201)
 def add_contact(contact: Contact):
+    clean_name = contact.name.strip()
+    if len(clean_name) < 2:
+        raise HTTPException(422, detail='Contact name must be at least 2 non-whitespace characters')
     try:
         birthday_in_year(contact.month, contact.day, 2024)
     except ValueError:
         raise HTTPException(422, detail='Invalid calendar date')
     with db() as conn:
         cur = conn.execute('INSERT INTO contacts(name,month,day,channel) VALUES(?,?,?,?)',
-                           (contact.name.strip(), contact.month, contact.day, contact.channel))
-        return {'id': cur.lastrowid, **contact.model_dump()}
+                           (clean_name, contact.month, contact.day, contact.channel))
+        return {'id': cur.lastrowid, **contact.model_dump(), 'name': clean_name}
+
+
+@app.delete('/api/contacts/{contact_id}', status_code=204)
+def delete_contact(contact_id: int):
+    if contact_id <= 0:
+        raise HTTPException(422, detail='Contact ID must be a positive integer')
+    with db() as conn:
+        res = conn.execute('DELETE FROM contacts WHERE id=?', (contact_id,))
+        if not res.rowcount:
+            raise HTTPException(404, detail='Contact not found')
 
 
 @app.get('/api/upcoming')
@@ -86,8 +99,8 @@ def upcoming(days: int = 30):
             if when < today:
                 when = birthday_in_year(row['month'], row['day'], today.year + 1)
             if when <= today + timedelta(days=days):
-                result.append({'name': row['name'], 'date': when.isoformat(), 'days_until': (when-today).days})
-    return sorted(result, key=lambda r: r['days_until'])
+                result.append({'id': row['id'], 'name': row['name'], 'date': when.isoformat(), 'days_until': (when-today).days})
+    return sorted(result, key=lambda r: (r['days_until'], r['name']))
 
 
 @app.post('/api/preview')
