@@ -40,6 +40,11 @@ services:
     volumes:
       - pocket-data:/data
     ports: ['8002:8002']
+    healthcheck:
+      test: ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://localhost:8002/health",timeout=3)']
+      interval: 20s
+      timeout: 5s
+      retries: 3
   link-api:
     build:
       context: ./services/link-api
@@ -50,6 +55,11 @@ services:
     volumes:
       - link-data:/data
     ports: ['8080:8080']
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:8080/health']
+      interval: 20s
+      timeout: 5s
+      retries: 3
 volumes:
   merchant-data:
   greeting-data:
